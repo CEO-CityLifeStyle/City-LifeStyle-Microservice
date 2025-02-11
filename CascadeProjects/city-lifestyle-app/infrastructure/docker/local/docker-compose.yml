@@ -1,0 +1,143 @@
+version: '3.8'
+
+x-common-labels: &common-labels
+  project: "city-lifestyle"
+  environment: "development"
+  maintainer: "City Lifestyle Team"
+  version: "1.0.0"
+  repository: "https://github.com/CEO-CityLifeStyle/City-LifeStyle-App"
+
+x-common-logging: &common-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+    tag: "{{.Name}}/{{.ID}}"
+
+x-resource-limits: &resource-limits
+  cpus: '0.5'
+  memory: '512M'
+
+x-resource-limits-db: &resource-limits-db
+  cpus: '1.0'
+  memory: '1G'
+
+x-healthcheck-defaults: &healthcheck-defaults
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 30s
+
+services:
+  frontend:
+    container_name: city-lifestyle-frontend-dev
+    build:
+      context: ../../../frontend
+      dockerfile: Dockerfile
+      target: development
+      args:
+        NODE_ENV: development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../../../frontend:/app
+      - /app/node_modules
+    environment:
+      - API_URL=http://api:8080
+      - AUTH_URL=http://auth:8081
+      - FIREBASE_API_KEY=${FIREBASE_API_KEY}
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET}
+    networks:
+      - city-lifestyle-network
+    labels: *common-labels
+    logging: *common-logging
+    deploy:
+      resources: *resource-limits
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+
+  backend:
+    container_name: city-lifestyle-backend-dev
+    build:
+      context: ../../../backend
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../../../backend:/app
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=city_lifestyle
+      - DB_USER=${DB_USER:-city_lifestyle}
+      - DB_PASSWORD=${DB_PASSWORD:-city_lifestyle_local}
+      - REDIS_HOST=cache
+      - REDIS_PORT=6379
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/service-account.json
+    networks:
+      - city-lifestyle-network
+    depends_on:
+      - db
+      - cache
+    labels: *common-labels
+    logging: *common-logging
+    deploy:
+      resources: *resource-limits
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+
+  db:
+    container_name: city-lifestyle-db-dev
+    image: postgres:14-alpine
+    ports:
+      - "5432:5432"
+    volumes:
+      - city-lifestyle-db-data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    environment:
+      - POSTGRES_DB=city_lifestyle
+      - POSTGRES_USER=${DB_USER:-city_lifestyle}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-city_lifestyle_local}
+    networks:
+      - city-lifestyle-network
+    labels: *common-labels
+    logging: *common-logging
+    deploy:
+      resources: *resource-limits-db
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "pg_isready -U city_lifestyle"]
+
+  cache:
+    container_name: city-lifestyle-cache-dev
+    image: redis:6-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - city-lifestyle-cache-data:/data
+    networks:
+      - city-lifestyle-network
+    labels: *common-labels
+    logging: *common-logging
+    deploy:
+      resources: *resource-limits
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "redis-cli", "ping"]
+
+networks:
+  city-lifestyle-network:
+    name: city-lifestyle-network
+    driver: bridge
+
+volumes:
+  city-lifestyle-db-data:
+    name: city-lifestyle-db-data
+  city-lifestyle-cache-data:
+    name: city-lifestyle-cache-data

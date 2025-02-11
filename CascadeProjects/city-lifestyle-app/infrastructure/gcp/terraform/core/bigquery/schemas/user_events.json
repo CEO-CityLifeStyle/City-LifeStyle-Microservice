@@ -1,0 +1,87 @@
+[
+  {
+    "name": "event_id",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "Unique identifier for the event"
+  },
+  {
+    "name": "user_id",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "User identifier"
+  },
+  {
+    "name": "event_type",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "Type of event"
+  },
+  {
+    "name": "event_timestamp",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED",
+    "description": "Time when the event occurred"
+  },
+  {
+    "name": "session_id",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Session identifier"
+  },
+  {
+    "name": "device_info",
+    "type": "RECORD",
+    "mode": "NULLABLE",
+    "fields": [
+      {
+        "name": "device_type",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "os",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "browser",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      }
+    ]
+  },
+  {
+    "name": "location",
+    "type": "RECORD",
+    "mode": "NULLABLE",
+    "fields": [
+      {
+        "name": "city",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "country",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "latitude",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "longitude",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      }
+    ]
+  },
+  {
+    "name": "event_data",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "JSON encoded event specific data"
+  }
+]

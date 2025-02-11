@@ -1,0 +1,34 @@
+# Example terraform.tfvars file for production environment
+# Copy this file to terraform.tfvars and update the values
+
+project_id = "city-lifestyle-prod"
+region     = "us-central1"
+secondary_region = "us-east1"
+
+allowed_origins = [
+  "https://citylifestyle.app",
+  "https://www.citylifestyle.app"
+]
+
+domain_name = "citylifestyle.app"
+
+alert_notification_channel = "projects/city-lifestyle-prod/notificationChannels/prod-channel-id"
+
+vpc_cidr = "10.0.0.0/16"
+
+environment_vars = {
+  ENVIRONMENT = "production"
+  API_URL     = "https://api.citylifestyle.app"
+  DEBUG       = "false"
+}
+
+ssl_policy_min_tls_version = "TLS_1_2"
+
+budget_amount = 1000
+
+alert_thresholds = {
+  error_rate       = 0.01  # 1%
+  latency_ms       = 1000  # 1 second
+  cpu_threshold    = 0.8   # 80%
+  memory_threshold = 0.8   # 80%
+}

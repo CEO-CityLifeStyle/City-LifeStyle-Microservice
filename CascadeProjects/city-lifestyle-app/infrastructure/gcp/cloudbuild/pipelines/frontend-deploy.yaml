@@ -1,0 +1,68 @@
+steps:
+  # Install dependencies
+  - name: 'node:18'
+    entrypoint: npm
+    args: ['install']
+    dir: 'frontend'
+
+  # Run tests
+  - name: 'node:18'
+    entrypoint: npm
+    args: ['test']
+    dir: 'frontend'
+
+  # Build the application
+  - name: 'node:18'
+    entrypoint: npm
+    args: ['run', 'build']
+    dir: 'frontend'
+    env:
+      - 'REACT_APP_API_URL=${_API_URL}'
+      - 'REACT_APP_ENVIRONMENT=${_ENVIRONMENT}'
+      - 'NODE_ENV=production'
+
+  # Upload to Cloud Storage
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args:
+      - '-m'
+      - 'rsync'
+      - '-r'
+      - '-d'
+      - 'frontend/build'
+      - 'gs://${_BUCKET_NAME}'
+
+  # Set Cache-Control headers
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args:
+      - '-m'
+      - 'setmeta'
+      - '-h'
+      - 'Cache-Control:public, max-age=3600'
+      - 'gs://${_BUCKET_NAME}/**/*.html'
+
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args:
+      - '-m'
+      - 'setmeta'
+      - '-h'
+      - 'Cache-Control:public, max-age=31536000'
+      - 'gs://${_BUCKET_NAME}/static/**'
+
+  # Invalidate CDN cache
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'compute'
+      - 'url-maps'
+      - 'invalidate-cdn-cache'
+      - '${_CDN_URL_MAP}'
+      - '--path=/*'
+      - '--async'
+
+substitutions:
+  _ENVIRONMENT: 'dev'        # Default to dev
+  _BUCKET_NAME: ''          # Required, no default
+  _API_URL: ''             # Required, no default
+  _CDN_URL_MAP: ''         # Required, no default
+
+options:
+  logging: CLOUD_LOGGING_ONLY

@@ -1,0 +1,185 @@
+version: '3.8'
+
+x-common-labels: &common-labels
+  project: "city-lifestyle"
+  environment: "production"
+  maintainer: "City Lifestyle Team"
+  version: "1.0.0"
+
+x-common-logging: &common-logging
+  driver: "json-file"
+  options:
+    max-size: "100m"
+    max-file: "5"
+    tag: "{{.Name}}/{{.ID}}"
+
+x-resource-limits: &resource-limits
+  cpus: '2.0'
+  memory: '2G'
+
+x-resource-limits-db: &resource-limits-db
+  cpus: '4.0'
+  memory: '4G'
+
+x-healthcheck-defaults: &healthcheck-defaults
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 60s
+
+services:
+  frontend:
+    image: ${DOCKER_REGISTRY}/citylife-frontend:${TAG:-latest}
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "3000:3000"
+    environment:
+      - API_URL=${API_URL}
+      - AUTH_URL=${AUTH_URL}
+    networks:
+      - citylife-network
+    labels: *common-labels
+    logging: *common-logging
+    deploy:
+      replicas: 3
+      resources: *resource-limits
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+    healthcheck:
+      test: ["CMD-SHELL", "./scripts/health/healthcheck.sh frontend"]
+      <<: *healthcheck-defaults
+
+  api:
+    image: ${DOCKER_REGISTRY}/citylife-api:${TAG:-latest}
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=${MONGODB_URI}
+      - REDIS_URL=${REDIS_URL}
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - citylife-network
+    labels: *common-labels
+    logging: *common-logging
+    deploy:
+      replicas: 3
+      resources: *resource-limits
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+    healthcheck:
+      test: ["CMD-SHELL", "./scripts/health/healthcheck.sh api"]
+      <<: *healthcheck-defaults
+
+  auth:
+    image: ${DOCKER_REGISTRY}/citylife-auth:${TAG:-latest}
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile.auth
+      target: production
+    ports:
+      - "8081:8081"
+    environment:
+      - NODE_ENV=production
+      - REDIS_URL=${REDIS_URL}
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - citylife-network
+    labels: *common-labels
+    logging: *common-logging
+    deploy:
+      replicas: 2
+      resources: *resource-limits
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+    healthcheck:
+      test: ["CMD-SHELL", "./scripts/health/healthcheck.sh auth"]
+      <<: *healthcheck-defaults
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./config/mongodb/mongod.conf:/etc/mongod.conf:ro
+      - ./scripts/init/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    command: ["mongod", "--config", "/etc/mongod.conf"]
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+    networks:
+      - citylife-network
+    labels: *common-labels
+    logging: *common-logging
+    deploy:
+      resources: *resource-limits-db
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+    healthcheck:
+      test: ["CMD-SHELL", "./scripts/health/healthcheck.sh mongodb"]
+      <<: *healthcheck-defaults
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./config/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - ./scripts/init/init-redis.sh:/docker-entrypoint-initdb.d/init-redis.sh:ro
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    networks:
+      - citylife-network
+    labels: *common-labels
+    logging: *common-logging
+    deploy:
+      resources: *resource-limits-db
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+    healthcheck:
+      test: ["CMD-SHELL", "./scripts/health/healthcheck.sh redis"]
+      <<: *healthcheck-defaults
+
+networks:
+  citylife-network:
+    name: citylife-network-prod
+    driver: bridge
+    labels: *common-labels
+    driver_opts:
+      encrypted: "true"
+
+volumes:
+  mongodb_data:
+    name: citylife-mongodb-data-prod
+    labels: *common-labels
+  redis_data:
+    name: citylife-redis-data-prod
+    labels: *common-labels

@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: city-lifestyle
+      service: api
+  template:
+    metadata:
+      labels:
+        app: city-lifestyle
+        service: api
+    spec:
+      containers:
+      - name: api
+        image: registry.example.com/api:latest  # Will be patched by overlay
+        ports:
+        - containerPort: 8080
+        resources:
+          limits:
+            cpu: "1"
+            memory: "512Mi"
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+        env:
+        - name: ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: ENVIRONMENT

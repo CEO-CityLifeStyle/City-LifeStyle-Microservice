@@ -1,0 +1,60 @@
+displayName: High Latency Alert
+documentation:
+  content: |
+    # High Latency Alert
+    This alert triggers when the 95th percentile latency exceeds the threshold.
+    
+    ## Investigation Steps
+    1. Check Cloud Run metrics for CPU/Memory pressure
+    2. Check Cloud SQL performance metrics
+    3. Review recent deployments
+    4. Check upstream dependencies
+    
+    ## Remediation Steps
+    1. Scale up resources if needed
+    2. Rollback recent changes if related
+    3. Check for database optimizations
+    4. Review caching strategy
+
+combiner: OR
+conditions:
+  - displayName: "Cloud Run P95 Latency > 1s"
+    conditionThreshold:
+      filter: >
+        metric.type="run.googleapis.com/request_latencies"
+        resource.type="cloud_run_revision"
+      aggregations:
+        - alignmentPeriod: 60s
+          perSeriesAligner: ALIGN_PERCENTILE_95
+      comparison: COMPARISON_GT
+      duration: 300s
+      thresholdValue: 1000
+      trigger:
+        count: 1
+
+  - displayName: "API Gateway P95 Latency > 500ms"
+    conditionThreshold:
+      filter: >
+        metric.type="apigateway.googleapis.com/request_latencies"
+        resource.type="api_gateway"
+      aggregations:
+        - alignmentPeriod: 60s
+          perSeriesAligner: ALIGN_PERCENTILE_95
+      comparison: COMPARISON_GT
+      duration: 300s
+      thresholdValue: 500
+      trigger:
+        count: 1
+
+alertStrategy:
+  autoClose: 7200s
+  notificationRateLimit:
+    period: 300s
+
+notification_channels:
+  - type: email
+    labels:
+      email_address: alerts@citylifestyle.app
+  - type: slack
+    labels:
+      channel_name: "#alerts"

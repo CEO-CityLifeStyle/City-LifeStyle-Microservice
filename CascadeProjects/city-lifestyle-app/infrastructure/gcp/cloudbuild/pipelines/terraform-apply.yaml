@@ -1,0 +1,37 @@
+steps:
+  # Download terraform
+  - name: 'hashicorp/terraform:1.5.0'
+    args: ['version']
+
+  # Initialize Terraform
+  - name: 'hashicorp/terraform:1.5.0'
+    args: ['init']
+    dir: 'terraform/environments/${_ENVIRONMENT}'
+
+  # Download saved plan
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args: ['cp', 'gs://${_STATE_BUCKET}/plans/${_ENVIRONMENT}/${_PLAN_ID}.tfplan', 'terraform/environments/${_ENVIRONMENT}/tfplan']
+
+  # Apply Terraform changes
+  - name: 'hashicorp/terraform:1.5.0'
+    args: ['apply', '-auto-approve', 'tfplan']
+    dir: 'terraform/environments/${_ENVIRONMENT}'
+
+  # Tag successful deployment
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args: [
+      'builds',
+      'tags',
+      'add',
+      '${BUILD_ID}',
+      '--tag=environment=${_ENVIRONMENT}',
+      '--tag=status=success'
+    ]
+
+substitutions:
+  _ENVIRONMENT: 'dev'  # Default to dev, override in trigger
+  _STATE_BUCKET: 'city-lifestyle-terraform-state'
+  _PLAN_ID: ''  # Required, no default
+
+options:
+  logging: CLOUD_LOGGING_ONLY

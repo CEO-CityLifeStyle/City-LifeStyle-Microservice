@@ -1,0 +1,69 @@
+steps:
+  # Get Terraform state from GCS
+  - name: 'gcr.io/${PROJECT_ID}/terraform'
+    args:
+      - 'init'
+      - '-backend-config=bucket=${_STATE_BUCKET}'
+      - '-backend-config=prefix=${_ENVIRONMENT}'
+    dir: 'infrastructure/gcp/terraform/environments/${_ENVIRONMENT}'
+
+  # Validate Terraform configuration
+  - name: 'gcr.io/${PROJECT_ID}/terraform'
+    args:
+      - 'validate'
+    dir: 'infrastructure/gcp/terraform/environments/${_ENVIRONMENT}'
+
+  # Generate Terraform plan
+  - name: 'gcr.io/${PROJECT_ID}/terraform'
+    args:
+      - 'plan'
+      - '-var-file=terraform.tfvars'
+      - '-var=project_id=${PROJECT_ID}'
+      - '-var=environment=${_ENVIRONMENT}'
+      - '-out=tfplan'
+    dir: 'infrastructure/gcp/terraform/environments/${_ENVIRONMENT}'
+
+  # Apply Terraform changes
+  - name: 'gcr.io/${PROJECT_ID}/terraform'
+    args:
+      - 'apply'
+      - '-auto-approve'
+      - 'tfplan'
+    dir: 'infrastructure/gcp/terraform/environments/${_ENVIRONMENT}'
+
+  # Run security checks
+  - name: 'gcr.io/${PROJECT_ID}/tfsec'
+    args:
+      - '.'
+    dir: 'infrastructure/gcp/terraform'
+
+  # Generate documentation
+  - name: 'gcr.io/${PROJECT_ID}/terraform-docs'
+    args:
+      - 'markdown'
+      - 'table'
+      - '--output-file=README.md'
+      - '.'
+    dir: 'infrastructure/gcp/terraform'
+
+timeout: '3600s'
+options:
+  logging: CLOUD_LOGGING_ONLY
+  env:
+    - 'TF_IN_AUTOMATION=true'
+    - 'TF_CLI_ARGS=-no-color'
+
+substitutions:
+  _ENVIRONMENT: 'production'
+  _STATE_BUCKET: '${PROJECT_ID}-terraform-state'
+
+artifacts:
+  objects:
+    location: 'gs://${PROJECT_ID}_cloudbuild/terraform/${BUILD_ID}'
+    paths:
+      - 'infrastructure/gcp/terraform/environments/${_ENVIRONMENT}/tfplan'
+      - 'infrastructure/gcp/terraform/README.md'
+
+tags:
+  - 'terraform'
+  - 'infrastructure'

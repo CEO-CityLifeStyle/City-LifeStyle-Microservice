@@ -1,0 +1,22 @@
+# Example terraform.tfvars file for development environment
+# Copy this file to terraform.tfvars and update the values
+
+project_id = "city-lifestyle-dev"
+region     = "us-central1"
+
+allowed_origins = [
+  "http://localhost:3000",
+  "https://dev.citylifestyle.app"
+]
+
+domain_name = "dev.citylifestyle.app"
+
+alert_notification_channel = "projects/city-lifestyle-dev/notificationChannels/dev-channel-id"
+
+vpc_cidr = "10.0.0.0/16"
+
+environment_vars = {
+  ENVIRONMENT = "development"
+  API_URL     = "https://api.dev.citylifestyle.app"
+  DEBUG       = "true"
+}

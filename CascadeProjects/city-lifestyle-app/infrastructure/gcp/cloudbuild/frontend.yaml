@@ -1,0 +1,55 @@
+steps:
+  # Install dependencies
+  - name: 'node:18'
+    entrypoint: npm
+    args: ['ci']
+    dir: 'frontend'
+
+  # Run tests
+  - name: 'node:18'
+    entrypoint: npm
+    args: ['test']
+    dir: 'frontend'
+
+  # Build production assets
+  - name: 'node:18'
+    entrypoint: npm
+    args: ['run', 'build']
+    dir: 'frontend'
+    env:
+      - 'VITE_API_URL=${_API_URL}'
+      - 'VITE_ENVIRONMENT=${_ENVIRONMENT}'
+
+  # Upload to Cloud Storage
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args:
+      - '-m'
+      - 'rsync'
+      - '-r'
+      - '-d'
+      - 'frontend/dist'
+      - 'gs://${_STORAGE_BUCKET}'
+
+  # Invalidate CDN cache
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud compute url-maps invalidate-cdn-cache ${_CDN_URL_MAP} \
+          --path "/*" \
+          --async
+
+timeout: '1800s'
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _ENVIRONMENT: 'production'
+  _API_URL: 'https://api.citylifestyle.com'
+  _STORAGE_BUCKET: 'city-lifestyle-static'
+  _CDN_URL_MAP: 'frontend-cdn-urlmap'
+
+tags:
+  - 'frontend'
+  - 'production'

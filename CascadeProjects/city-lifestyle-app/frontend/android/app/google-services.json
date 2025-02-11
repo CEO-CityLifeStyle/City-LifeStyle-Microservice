@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "305829852130",
+    "project_id": "city-lifestyle-app-prod",
+    "storage_bucket": "city-lifestyle-app-prod.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:305829852130:android:2e0d31700af362a6f43fbb",
+        "android_client_info": {
+          "package_name": "com.citylifestyle.frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBIUe3hDD0qBqBIq3jMxHENtpzt9UamWcQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

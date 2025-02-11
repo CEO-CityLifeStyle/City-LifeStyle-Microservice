@@ -1,0 +1,72 @@
+# Stage 1: Development
+FROM node:18-alpine as development
+
+# Install dependencies required for node-canvas
+RUN apk add --no-cache \
+    build-base \
+    g++ \
+    cairo-dev \
+    jpeg-dev \
+    pango-dev \
+    giflib-dev \
+    python3 \
+    curl
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy app source
+COPY . .
+
+# Build TypeScript code
+RUN npm run build
+
+# Expose port
+EXPOSE 8080
+
+# Add healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Start development server
+CMD ["npm", "run", "dev"]
+
+# Stage 2: Production
+FROM node:18-alpine as production
+
+# Install dependencies required for node-canvas
+RUN apk add --no-cache \
+    build-base \
+    g++ \
+    cairo-dev \
+    jpeg-dev \
+    pango-dev \
+    giflib-dev \
+    curl
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install production dependencies only
+RUN npm ci --only=production
+
+# Copy app source and build artifacts
+COPY --from=development /app/dist ./dist
+COPY . .
+
+# Expose port
+EXPOSE 8080
+
+# Add healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Start production server
+CMD ["npm", "start"]

@@ -1,0 +1,88 @@
+displayName: Resource Usage Alert
+documentation:
+  content: |
+    # Resource Usage Alert
+    This alert triggers when resource utilization exceeds thresholds.
+    
+    ## Investigation Steps
+    1. Check service metrics in Cloud Monitoring
+    2. Review traffic patterns
+    3. Check for memory leaks
+    4. Monitor database connections
+    
+    ## Remediation Steps
+    1. Scale resources if needed
+    2. Optimize resource usage
+    3. Review connection pooling
+    4. Check for resource leaks
+
+combiner: OR
+conditions:
+  - displayName: "Cloud Run CPU Usage > 80%"
+    conditionThreshold:
+      filter: >
+        metric.type="run.googleapis.com/container/cpu/utilization"
+        resource.type="cloud_run_revision"
+      aggregations:
+        - alignmentPeriod: 60s
+          perSeriesAligner: ALIGN_MEAN
+      comparison: COMPARISON_GT
+      duration: 300s
+      thresholdValue: 0.8
+      trigger:
+        count: 1
+
+  - displayName: "Cloud Run Memory Usage > 80%"
+    conditionThreshold:
+      filter: >
+        metric.type="run.googleapis.com/container/memory/utilization"
+        resource.type="cloud_run_revision"
+      aggregations:
+        - alignmentPeriod: 60s
+          perSeriesAligner: ALIGN_MEAN
+      comparison: COMPARISON_GT
+      duration: 300s
+      thresholdValue: 0.8
+      trigger:
+        count: 1
+
+  - displayName: "Cloud SQL CPU Usage > 80%"
+    conditionThreshold:
+      filter: >
+        metric.type="cloudsql.googleapis.com/database/cpu/utilization"
+        resource.type="cloudsql_database"
+      aggregations:
+        - alignmentPeriod: 60s
+          perSeriesAligner: ALIGN_MEAN
+      comparison: COMPARISON_GT
+      duration: 300s
+      thresholdValue: 0.8
+      trigger:
+        count: 1
+
+  - displayName: "Cloud SQL Memory Usage > 80%"
+    conditionThreshold:
+      filter: >
+        metric.type="cloudsql.googleapis.com/database/memory/utilization"
+        resource.type="cloudsql_database"
+      aggregations:
+        - alignmentPeriod: 60s
+          perSeriesAligner: ALIGN_MEAN
+      comparison: COMPARISON_GT
+      duration: 300s
+      thresholdValue: 0.8
+      trigger:
+        count: 1
+
+alertStrategy:
+  autoClose: 7200s
+  notificationRateLimit:
+    period: 300s
+
+notification_channels:
+  - type: email
+    labels:
+      email_address: alerts@citylifestyle.app
+  - type: slack
+    labels:
+      channel_name: "#alerts"

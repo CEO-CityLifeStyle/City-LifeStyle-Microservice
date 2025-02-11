@@ -1,0 +1,31 @@
+# Example terraform.tfvars file for staging environment
+# Copy this file to terraform.tfvars and update the values
+
+project_id = "city-lifestyle-staging"
+region     = "us-central1"
+
+allowed_origins = [
+  "https://staging.citylifestyle.app",
+  "https://api.staging.citylifestyle.app"
+]
+
+domain_name = "staging.citylifestyle.app"
+
+alert_notification_channel = "projects/city-lifestyle-staging/notificationChannels/staging-channel-id"
+
+environment_vars = {
+  ENVIRONMENT = "staging"
+  API_URL     = "https://api.staging.citylifestyle.app"
+  DEBUG       = "true"
+}
+
+ssl_policy_min_tls_version = "TLS_1_2"
+
+budget_amount = 500
+
+alert_thresholds = {
+  error_rate       = 0.02  # 2%
+  latency_ms       = 2000  # 2 seconds
+  cpu_threshold    = 0.8   # 80%
+  memory_threshold = 0.8   # 80%
+}

@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: city-lifestyle
+      component: frontend
+  template:
+    metadata:
+      labels:
+        app: city-lifestyle
+        component: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: frontend:latest  # Will be patched by overlay
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        env:
+        - name: API_URL
+          valueFrom:
+            configMapKeyRef:
+              name: frontend-config
+              key: API_URL
+        - name: ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: frontend-config
+              key: ENVIRONMENT

@@ -1,0 +1,66 @@
+[
+  {
+    "name": "metric_id",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "Unique identifier for the metric"
+  },
+  {
+    "name": "metric_name",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "Name of the metric"
+  },
+  {
+    "name": "metric_value",
+    "type": "FLOAT",
+    "mode": "REQUIRED",
+    "description": "Value of the metric"
+  },
+  {
+    "name": "metric_timestamp",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED",
+    "description": "Time when the metric was recorded"
+  },
+  {
+    "name": "service",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "Service that generated the metric"
+  },
+  {
+    "name": "labels",
+    "type": "RECORD",
+    "mode": "REPEATED",
+    "fields": [
+      {
+        "name": "key",
+        "type": "STRING",
+        "mode": "REQUIRED"
+      },
+      {
+        "name": "value",
+        "type": "STRING",
+        "mode": "REQUIRED"
+      }
+    ]
+  },
+  {
+    "name": "resource",
+    "type": "RECORD",
+    "mode": "NULLABLE",
+    "fields": [
+      {
+        "name": "type",
+        "type": "STRING",
+        "mode": "REQUIRED"
+      },
+      {
+        "name": "labels",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      }
+    ]
+  }
+]
